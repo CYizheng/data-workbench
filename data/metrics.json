@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "name": "求职投递台账（示例口径）",
+  "source": "ledger.example.yaml",
+  "tables": {
+    "main": "applications",
+    "main_alias": "a",
+    "events": "events",
+    "events_alias": "e",
+    "events_on": "e.app_id = a.id"
+  },
+  "time": {
+    "field": "a.applied_at",
+    "format": "%Y-%m-%d"
+  },
+  "metrics": [
+    {
+      "key": "applications",
+      "name": "投递数",
+      "aliases": [
+        "投递数",
+        "投递量",
+        "投了多少",
+        "投了几家",
+        "一共投",
+        "总共投",
+        "投递",
+        "投了",
+        "数量",
+        "几家"
+      ],
+      "expr": "COUNT(DISTINCT a.id)",
+      "unit": "家",
+      "note": "只数投出去的记录，不区分当前状态。",
+      "needs_events": false,
+      "event_filter": ""
+    },
+    {
+      "key": "active",
+      "name": "在流程中",
+      "aliases": [
+        "在流程中",
+        "流程中的",
+        "还在跑",
+        "没结束",
+        "进行中"
+      ],
+      "expr": "SUM(CASE WHEN a.status = '流程中' THEN 1 ELSE 0 END)",
+      "unit": "家",
+      "note": "只含状态为「流程中」的，泡池子不计入——泡池子另有一档。",
+      "needs_events": false,
+      "event_filter": ""
+    },
+    {
+      "key": "stalled",
+      "name": "泡池子",
+      "aliases": [
+        "泡池子",
+        "卡住",
+        "没回音",
+        "停在"
+      ],
+      "expr": "SUM(CASE WHEN a.status = '泡池子' THEN 1 ELSE 0 END)",
+      "unit": "家",
+      "note": "",
+      "needs_events": false,
+      "event_filter": ""
+    },
+    {
+      "key": "rejected",
+      "name": "已挂",
+      "aliases": [
+        "已挂",
+        "挂了",
+        "被拒",
+        "拒了"
+      ],
+      "expr": "SUM(CASE WHEN a.status = '已挂' THEN 1 ELSE 0 END)",
+      "unit": "家",
+      "note": "",
+      "needs_events": false,
+      "event_filter": ""
+    },
+    {
+      "key": "interviews",
+      "name": "面试场次",
+      "aliases": [
+        "面试场次",
+        "面了几场",
+        "面试次数",
+        "几场面试"
+      ],
+      "expr": "COUNT(DISTINCT e.id)",
+      "unit": "场",
+      "note": "数的是事件流里的面试事件，一家单位可能面多轮，所以在这里 JOIN events。",
+      "needs_events": true,
+      "event_filter": "e.kind = '面试'"
+    },
+    {
+      "key": "exams",
+      "name": "笔试场次",
+      "aliases": [
+        "笔试场次",
+        "笔试次数",
+        "几场笔试"
+      ],
+      "expr": "COUNT(DISTINCT e.id)",
+      "unit": "场",
+      "note": "",
+      "needs_events": true,
+      "event_filter": "e.kind = '笔试'"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "city",
+      "name": "城市",
+      "aliases": [
+        "城市",
+        "地区",
+        "按城市",
+        "各城市"
+      ],
+      "column": "a.city",
+      "time_grain": false,
+      "default_true": false
+    },
+    {
+      "key": "category",
+      "name": "岗位类型",
+      "aliases": [
+        "岗位类型",
+        "按岗位",
+        "各类岗位",
+        "方向"
+      ],
+      "column": "a.category",
+      "time_grain": false,
+      "default_true": false
+    },
+    {
+      "key": "status",
+      "name": "状态",
+      "aliases": [
+        "状态",
+        "按状态"
+      ],
+      "column": "a.status",
+      "time_grain": false,
+      "default_true": false
+    },
+    {
+      "key": "channel",
+      "name": "渠道",
+      "aliases": [
+        "渠道",
+        "来源",
+        "按渠道"
+      ],
+      "column": "a.channel",
+      "time_grain": false,
+      "default_true": false
+    },
+    {
+      "key": "month",
+      "name": "月份",
+      "aliases": [
+        "月份",
+        "按月",
+        "每月",
+        "各月"
+      ],
+      "column": "substr(a.applied_at, 1, 7)",
+      "time_grain": true,
+      "default_true": true
+    }
+  ],
+  "enums": {
+    "status": {
+      "column": "a.status",
+      "values": [
+        "流程中",
+        "泡池子",
+        "已挂",
+        "已放弃"
+      ]
+    }
+  }
+}

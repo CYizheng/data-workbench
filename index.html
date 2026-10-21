@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据工作台 · 口径 → 查询 → 核查 → 看板</title>
+<meta name="description" content="把指标口径写成声明式的一层，问句按这层翻译成只读 SQL，并在浏览器里真的执行。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark">DW</span>
+    <div>
+      <h1>数据工作台</h1>
+      <p class="sub">口径定义 · 自然语言取数 · 一致性核查</p>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="视图">
+    <button class="tab is-on" data-view="query" role="tab" aria-selected="true">口径查询</button>
+    <button class="tab" data-view="audit" role="tab" aria-selected="false">一致性核查</button>
+    <button class="tab" data-view="board" role="tab" aria-selected="false">台账看板</button>
+  </nav>
+
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">加载中</span></div>
+</header>
+
+<main>
+
+  <!-- ============ 口径查询 ============ -->
+  <section class="view is-on" id="view-query">
+    <div class="cols">
+
+      <aside class="panel pad">
+        <span class="caps">问一句</span>
+        <textarea id="question" placeholder="例：本月各城市投递数" spellcheck="false"></textarea>
+
+        <div class="row">
+          <label class="date-wrap">基准日期
+            <input type="date" id="today">
+          </label>
+          <button class="btn primary" id="run">查询</button>
+        </div>
+
+        <div class="chips" id="chips"></div>
+        <p class="hint" id="dataNote"></p>
+
+        <div class="dict">
+          <span class="caps">口径层里的词（命中即可，不需要背 SQL）</span>
+          <div id="dictList"></div>
+        </div>
+      </aside>
+
+      <div>
+        <section class="panel" id="resultPanel">
+          <div class="res-head">
+            <div class="rail">
+              <h2 class="sec" id="resTitle">还没有查询</h2>
+              <div class="plan" id="resPlan"></div>
+            </div>
+          </div>
+          <div id="resBody"><div class="empty" id="resEmpty">在左边输入一句中文，或点一个示例。</div></div>
+        </section>
+
+        <section class="panel" id="notePanel" hidden>
+          <div class="pad"><p class="note" id="noteText"></p></div>
+        </section>
+
+        <section class="panel" id="sqlPanel" hidden>
+          <div class="panel-head">
+            <h2 class="sec">生成的 SQL</h2>
+            <span class="meta-line" id="sqlMeta"></span>
+          </div>
+          <pre class="code" id="sqlCode"></pre>
+        </section>
+
+        <details class="panel guard">
+          <summary>只读守卫自测 —— 随便写一条 SQL，看它拦不拦</summary>
+          <div class="guard-body">
+            <div class="layers">
+              <div class="layer">
+                <div class="n">第 1 层</div>
+                <div class="t">连接层</div>
+                <div class="d">浏览器里数据是内存副本，刷新即还原；命令行版用 <code>mode=ro</code> 打开文件。</div>
+              </div>
+              <div class="layer">
+                <div class="n">第 2 层</div>
+                <div class="t">语句层</div>
+                <div class="d">只放行单条 SELECT/WITH；先剥掉注释与字符串字面量再判断。</div>
+              </div>
+              <div class="layer">
+                <div class="n">第 3 层</div>
+                <div class="t">结果层</div>
+                <div class="d">没有 LIMIT 就自动补；查询结果行数封顶。</div>
+              </div>
+            </div>
+            <textarea id="sandbox" spellcheck="false">DROP TABLE applications</textarea>
+            <div class="row">
+              <button class="btn" id="tryGuard">交给守卫</button>
+              <span class="hint" style="margin:0">试试：<code>DELETE FROM events</code>／<code>SELECT * FROM applications; DROP TABLE events</code>／<code>SELECT 1 -- drop table x</code></span>
+            </div>
+            <div id="verdict"></div>
+          </div>
+        </details>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 一致性核查 ============ -->
+  <section class="view" id="view-audit">
+    <div class="audit-head">
+      <div class="rail">
+        <h2 class="sec">同一套材料，跨文件字段冲突</h2>
+        <p class="hint" id="auditSource"></p>
+      </div>
+      <div class="meta-line" id="auditCounts"></div>
+    </div>
+    <div id="findings"></div>
+  </section>
+
+  <!-- ============ 台账看板 ============ -->
+  <section class="view" id="view-board">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="split">
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="sec">投递城市分布</h2>
+          <span class="meta-line" id="cityMeta"></span>
+        </div>
+        <div class="bars" id="cityBars"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="sec">状态构成</h2>
+          <span class="meta-line">全量</span>
+        </div>
+        <div class="bars" id="statusSplit"></div>
+        <div class="status-legend" id="statusLegend"></div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:14px">
+      <div class="panel-head">
+        <h2 class="sec">投递节奏</h2>
+        <div class="legend"><span><i></i>每月投递数</span></div>
+      </div>
+      <div class="months" id="months"></div>
+      <div class="mlabels" id="mlabels"></div>
+    </section>
+  </section>
+
+  <footer class="page">
+    <span>演示数据为虚构（128 条投递 / 232 条事件），与真实台账无对应关系。</span>
+    <span>
+      <a href="https://github.com/CYizheng/metric-layer">口径层</a> ·
+      <a href="https://github.com/CYizheng/consistency-audit">一致性核查</a> ·
+      SQLite 由 sql.js（WASM）在本地执行
+    </span>
+  </footer>
+
+</main>
+
+<script src="vendor/sql-wasm.js"></script>
+<script src="assets/nlq.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
