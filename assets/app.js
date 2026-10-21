@@ -123,7 +123,7 @@
     return '<table><thead>' + head + '</thead><tbody>' + body + '</tbody></table>' +
       '<div class="res-foot"><span>' + rows.length + ' 行' +
       (truncated ? ' · 已截断' : '') + '</span><span>' +
-      (ms < 0.1 ? '< 0.1' : ms.toFixed(1)) + ' ms</span></div>';
+      (ms < 0.1 ? '&lt; 0.1' : ms.toFixed(1)) + ' ms</span></div>';
   }
 
   function runQuery() {
